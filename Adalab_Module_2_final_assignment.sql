@@ -255,7 +255,7 @@ SELECT title
 /*23. Encuentra el nombre y apellido de los actores que no han actuado en ninguna película de la categoría "Horror".
 Utiliza una subconsulta para encontrar los actores que han actuado en películas de la categoría "Horror" y luego
 exclúyelos de la lista de actores.
-EN: Find the first and last names of actors who have not acted in any movie in the 'Horror' category. Use a subquery 
+EN: Find the first and last names of actors who have not acted in 'Horror' films. Use a subquery 
 to find the actors who have appeared in 'Horror' movies and then exclude them from the list of actors */ 
 
 SELECT a.first_name, a.last_name, c.name
@@ -268,16 +268,43 @@ SELECT a.first_name, a.last_name, c.name
     USING (category_id)
     INNER JOIN actor AS a
     USING (actor_id)
-    WHERE c.name NOT IN ('Horror');
-    
-    SELECT a.first_name, a.last_name, c.name
-	FROM film_actor AS fa
-    INNER JOIN film as f
-    USING (film_id)
-    INNER JOIN film_category AS fc
+    WHERE a.actor_id NOT IN (SELECT a.actor_id
+							FROM film_actor AS fa
+							INNER JOIN film as f
+							USING (film_id)
+							INNER JOIN film_category AS fc
+							USING (film_id)
+							INNER JOIN category AS c
+							USING (category_id)
+							INNER JOIN actor AS a
+							USING (actor_id)
+							WHERE c.name = 'Horror');
+
+/* 24. BONUS: Encuentra el título de las películas que son comedias y tienen una duración mayor a 180 minutos en la
+tabla film. 
+EN:Find the titles of films that are comedies and have a duration greater than 180 minutes in the film table.*/
+
+SELECT f.title 
+	FROM film as f
+	INNER JOIN film_category AS fc
     USING (film_id)
     INNER JOIN category AS c
     USING (category_id)
-    INNER JOIN actor AS a
-    USING (actor_id)
-    WHERE c.name IN ('Horror')
+    WHERE c.name IN ('comedy') AND length > 180;
+
+/* 25. BONUS: Encuentra todos los actores que han actuado juntos en al menos una película. La consulta debe
+mostrar el nombre y apellido de los actores y el número de películas en las que han actuado juntos. 
+EN: Find all actors who have acted together in at least one movie. The query should display the first and last names of the 
+actors and the number of movies they have acted in together. */
+
+-- THIS IS WHERE I LEFT IT 31.10.24
+
+SELECT first_name, last_name, COUNT(fa1.film_id)
+	FROM film_actor AS fa1
+    INNER JOIN actor AS a1
+    WHERE fa1.film_id > (SELECT COUNT(fa2.film_id)
+							FROM film_actor AS fa2
+							INNER JOIN actor AS a2
+                            WHERE a1.actor_id = a2.actor_id)
+	GROUP BY a1.actor_id;
+							
