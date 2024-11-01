@@ -80,9 +80,9 @@ EN: Find the total number of films rented by category and display the category n
 
 SELECT c.name, COUNT(r.rental_id) AS 'number of rentals'
 	FROM film_category AS fc
-    INNER JOIN category AS c
+    INNER JOIN category AS c -- to access category name.
     USING (category_id)
-	INNER JOIN film AS f
+	INNER JOIN film AS f -- to access table inventory linked with table rental.
     USING (film_id)
     INNER JOIN inventory AS i
     USING (film_id)
@@ -90,7 +90,7 @@ SELECT c.name, COUNT(r.rental_id) AS 'number of rentals'
     USING (inventory_id)
     GROUP BY c.name;
 
--- Ensuring the result is acurate
+-- Query validation:
 
 WITH rentals AS (SELECT c.name, COUNT(r.rental_id) AS number_of_rentals
 						FROM film_category AS fc
@@ -114,7 +114,7 @@ SELECT COUNT(rental_id)
 clasificación junto con el promedio de duración. 
 EN: Find the average duration of films for each rating in the film table and display the rating along with the average duration */
 
-SELECT rating, AVG(length) AS average_length
+SELECT rating, AVG(length) AS average_duration
 	FROM film
     GROUP BY rating;
 
@@ -122,8 +122,8 @@ SELECT rating, AVG(length) AS average_length
 EN: Find the first name and last name of the actors who appear in the film titled 'Indian Love */
 
 SELECT a.first_name, a.last_name
-	FROM film AS f
-	INNER JOIN film_actor AS fa
+	FROM film AS f -- to access film titles.
+	INNER JOIN film_actor AS fa -- linked to table actor where we can access names and surnames.
 	USING (film_id)
     INNER JOIN actor AS a
     USING (actor_id)
@@ -132,11 +132,9 @@ SELECT a.first_name, a.last_name
 /*14. Muestra el título de todas las películas que contengan la palabra "dog" o "cat" en su descripción.
 EN: Display the titles of all films  that contain the word 'dog' or 'cat' in their description */
 
--- comment: it asks for words 'dog' and 'cat'. If it asked contains then you would use '%dog%' and '%cat%'
-
 SELECT title
 	FROM film
-	WHERE title LIKE 'dog' OR title LIKE 'cat';
+	WHERE title LIKE 'dog' OR title LIKE 'cat'; -- comment: it asks for words 'dog' and 'cat'. If it had asked contains then you would use '%dog%' and '%cat%'
 
 /* 15. Hay algún actor o actriz que no apareca en ninguna película en la tabla film_actor. 
 EN: Is there any actor or actress who does not appear in any films in the film_actor table? */
@@ -155,7 +153,7 @@ SELECT title
 	FROM film
 	WHERE release_year BETWEEN 2005 AND 2010;
 
--- Comment: checking that query returns correct results.
+-- Query validation as the above only shows results for 2006.
 
 SELECT release_year
 	FROM film;
@@ -165,13 +163,13 @@ EN: Find the titles of all films in category 'Family */
 
 SELECT f.title
 	FROM film AS f
-    INNER JOIN film_category AS fc
+    INNER JOIN film_category AS fc -- film_category linked to category where we can find category names.
     USING (film_id)
     INNER JOIN category as c
     USING (category_id)
     WHERE c.name IN ('Family');
     
--- Comment: checking that query returns correct results.
+-- Query validation. Count to ensure it returns the same number of rows. 
 
 SELECT c.name, COUNT(c.name)
 	FROM film AS f
@@ -192,12 +190,12 @@ SELECT a.first_name, a.last_name
     GROUP BY actor_id
     HAVING COUNT(actor_id) > 10;
 
--- Comment: checking that query returns correct results.
+-- QUERY validation.
 
-SELECT COUNT(actor_id)
+SELECT COUNT(actor_id) -- counting total number of actors.
 	FROM actor;
 
-SELECT a.first_name, a.last_name  
+SELECT a.first_name, a.last_name -- checking that results for less than 10 matches our query.
 	FROM actor AS a
     LEFT JOIN film_actor AS fa
 	USING (actor_id)
@@ -216,7 +214,7 @@ nombre de la categoría junto con el promedio de duración.
 EN: Find the film categories with an average duration of over 120 minutes, and display the category name along with 
 the average duration.*/
 
-SELECT c.name, AVG(f.length) AS length_average
+SELECT c.name, AVG(f.length) AS duration_average
 	FROM film_category AS fc
     INNER JOIN category AS c
     USING (category_id)
@@ -232,7 +230,7 @@ films they have acted in. */
 
 SELECT a.first_name, COUNT(fa.actor_id) AS number_films
 	FROM film_actor as fa
-    INNER JOIN actor AS a
+    INNER JOIN actor AS a -- to retrieve actor's names and surnames.
     USING (actor_id)
     GROUP BY fa.actor_id
     HAVING COUNT(film_id) > 5;
@@ -250,7 +248,7 @@ SELECT title
 			INNER JOIN rental AS r
 			USING (inventory_id)
 			WHERE f.rental_duration > 5) AS rental_id_table
-	GROUP BY title;
+GROUP BY title;
     
 /*23. Encuentra el nombre y apellido de los actores que no han actuado en ninguna película de la categoría "Horror".
 Utiliza una subconsulta para encontrar los actores que han actuado en películas de la categoría "Horror" y luego
@@ -258,7 +256,7 @@ exclúyelos de la lista de actores.
 EN: Find the first and last names of actors who have not acted in 'Horror' films. Use a subquery 
 to find the actors who have appeared in 'Horror' movies and then exclude them from the list of actors */ 
 
-SELECT a.first_name, a.last_name, c.name
+SELECT a.first_name, a.last_name
 	FROM film_actor AS fa
     INNER JOIN film as f
     USING (film_id)
@@ -268,7 +266,7 @@ SELECT a.first_name, a.last_name, c.name
     USING (category_id)
     INNER JOIN actor AS a
     USING (actor_id)
-    WHERE a.actor_id NOT IN (SELECT a.actor_id
+    WHERE a.actor_id NOT IN (SELECT a.actor_id -- returns the ids of actors who have acted in films in category horror.
 							FROM film_actor AS fa
 							INNER JOIN film as f
 							USING (film_id)
@@ -297,14 +295,23 @@ mostrar el nombre y apellido de los actores y el número de películas en las qu
 EN: Find all actors who have acted together in at least one movie. The query should display the first and last names of the 
 actors and the number of movies they have acted in together. */
 
--- THIS IS WHERE I LEFT IT 31.10.24
+USE sakila;
 
-SELECT first_name, last_name, COUNT(fa1.film_id)
-	FROM film_actor AS fa1
-    INNER JOIN actor AS a1
-    WHERE fa1.film_id > (SELECT COUNT(fa2.film_id)
-							FROM film_actor AS fa2
-							INNER JOIN actor AS a2
-                            WHERE a1.actor_id = a2.actor_id)
-	GROUP BY a1.actor_id;
-							
+-- Creating a CTE to join actor and film_actor tables to retrieve first and last names. 
+WITH table_A AS (SELECT fa1.actor_id, a1.first_name, a1.last_name,fa1.film_id
+					FROM film_actor AS fa1
+					INNER JOIN actor AS a1
+					USING (actor_id)),
+                    
+	 -- Creating CTE to self-join the table and pair the requested information. 
+	 table_B AS (SELECT fa2.actor_id, a2.first_name, a2.last_name, fa2.film_id
+					FROM film_actor AS fa2
+					INNER JOIN actor AS a2
+					USING (actor_id))
+                
+SELECT A.first_name AS Name1, A.last_name AS Surname1, B.first_name AS Name2, B.last_name AS Surname2, COUNT(A.film_id) as joint_films
+		FROM table_A AS A, table_B as B
+		WHERE A.actor_id <> B.actor_id AND A.film_id = B.film_id -- ensuring actors aren't paired with themselves and query returns films where they have acted together. 
+		GROUP BY A.actor_id, B.actor_id;
+                    
+              
