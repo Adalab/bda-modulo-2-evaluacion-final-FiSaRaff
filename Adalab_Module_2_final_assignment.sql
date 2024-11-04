@@ -40,7 +40,7 @@ EN: Find the first name and last name of actors who have 'Gibson' in their last 
 
 SELECT first_name, last_name
 	FROM actor
-	WHERE last_name LIKE 'Gibson';
+	WHERE last_name LIKE '%Gibson%'; -- Adding % at the beginning and end of word as it says names of actors who have Gibson in their last name.
 
 /* 7. Encuentra los nombres de los actores que tengan un actor_id entre 10 y 20.
 EN: Find the names of actors who have an actor_id between 10 and 20 */
@@ -49,12 +49,27 @@ SELECT first_name
 	FROM actor
 	WHERE actor_id BETWEEN 10 AND 20;
     
+-- Query validation: ok, 200 actors in total. Original query: 11 rows, validation query: 189 rows.
+    
+SELECT first_name
+	FROM actor
+    WHERE actor_id < 10 OR actor_id > 20; -- 189 rows.
+    
 /*8. Encuentra el título de las películas en la tabla film que no sean ni "R" ni "PG-13" en cuanto a su clasificación.
 EN: Find the titles of films in the film table that are neither 'R' nor 'PG-13' in terms of their rating.*/ 
 
 SELECT title
 	FROM film
 	WHERE rating NOT IN ('R', 'PG-13');
+
+-- Query validation: ok. 1000 films. Original query 582 rows, validation query 418 rows.
+
+SELECT DISTINCT(title)
+	FROM film; -- 1,000 rows.
+
+SELECT title
+	FROM film
+	WHERE rating IN ('R', 'PG-13'); -- 418 rows
 
 /*9. Encuentra la cantidad total de películas en cada clasificación de la tabla film y muestra la clasificación junto con
 el recuento.
@@ -105,10 +120,10 @@ WITH rentals AS (SELECT c.name, COUNT(r.rental_id) AS number_of_rentals
 						GROUP BY c.name)
                         
 SELECT SUM(number_of_rentals)
-	FROM rentals; -- 16,044
+	FROM rentals; -- number of rows from CTE: 16,044 rows.
 
 SELECT COUNT(rental_id)
-	FROM rental; -- 16,044 = correct
+	FROM rental; -- number of rows from original table 16,044.
 
 /*12. Encuentra el promedio de duración de las películas para cada clasificación de la tabla film y muestra la
 clasificación junto con el promedio de duración. 
@@ -134,7 +149,7 @@ EN: Display the titles of all films  that contain the word 'dog' or 'cat' in the
 
 SELECT title
 	FROM film
-	WHERE title LIKE 'dog' OR title LIKE 'cat'; -- comment: it asks for words 'dog' and 'cat'. If it had asked contains then you would use '%dog%' and '%cat%'
+	WHERE title LIKE 'dog' OR title LIKE 'cat'; -- comment: it asks for words 'dog' and 'cat'. If it had asked contains, you would use '%dog%' and '%cat%'
 
 /* 15. Hay algún actor o actriz que no apareca en ninguna película en la tabla film_actor. 
 EN: Is there any actor or actress who does not appear in any films in the film_actor table? */
@@ -155,7 +170,7 @@ SELECT title
 
 -- Query validation as the above only shows results for 2006.
 
-SELECT release_year
+SELECT DISTINCT(release_year) -- All films released in 2006.
 	FROM film;
 
 /* 17. Encuentra el título de todas las películas que son de la misma categoría que "Family". 
@@ -169,7 +184,7 @@ SELECT f.title
     USING (category_id)
     WHERE c.name IN ('Family');
     
--- Query validation. Count to ensure it returns the same number of rows. 
+-- Query validation. Count to ensure it returns the same number of rows. OK, 69 rows.
 
 SELECT c.name, COUNT(c.name)
 	FROM film AS f
@@ -190,9 +205,9 @@ SELECT a.first_name, a.last_name
     GROUP BY actor_id
     HAVING COUNT(actor_id) > 10;
 
--- QUERY validation.
+-- QUERY validation. Ok, total actors 200. Original query 200 rows, query validation 0 rows.
 
-SELECT COUNT(actor_id) -- counting total number of actors.
+SELECT COUNT(actor_id) -- counting total number of actors, 200.
 	FROM actor;
 
 SELECT a.first_name, a.last_name -- checking that results for less than 10 matches our query.
@@ -200,12 +215,12 @@ SELECT a.first_name, a.last_name -- checking that results for less than 10 match
     LEFT JOIN film_actor AS fa
 	USING (actor_id)
     GROUP BY actor_id
-    HAVING COUNT(actor_id) < 10;
+    HAVING COUNT(actor_id) < 10; -- 0 rows returned.
 
 /*19. Encuentra el título de todas las películas que son "R" y tienen una duración mayor a 2 horas en la tabla film. 
 EN: Find the title of all films that are rated 'R' and have a duration longer than 2 hours in the film table. */
 
-SELECT title, length, rating
+SELECT title
 	FROM film
 	WHERE rating IN ('R') AND length > 120;
 
@@ -241,7 +256,7 @@ EN: Find the title of all films that were rented for more than 5 days. Use a sub
 longer than 5 days, and then select the corresponding movies. */
 
 SELECT title
-	FROM (SELECT r.rental_id, f.title, rental_duration
+	FROM (SELECT r.rental_id, f.title, rental_duration -- This subquery returns rental_ids, films and rental duration greater than 5 days.
 			FROM film AS f
 			INNER JOIN inventory AS i
 			USING (film_id)
@@ -249,6 +264,23 @@ SELECT title
 			USING (inventory_id)
 			WHERE f.rental_duration > 5) AS rental_id_table
 GROUP BY title;
+
+-- Query validation: OK, total rental ids 16,044 rows. Original query 6,216 rows, query validation 9,828 rows.
+
+SELECT COUNT(r.rental_id)
+			FROM film AS f
+			INNER JOIN inventory AS i
+			USING (film_id)
+			INNER JOIN rental AS r
+			USING (inventory_id);
+
+SELECT r.rental_id, f.title, rental_duration 
+			FROM film AS f
+			INNER JOIN inventory AS i
+			USING (film_id)
+			INNER JOIN rental AS r
+			USING (inventory_id)
+			WHERE f.rental_duration <= 5; -- 9,828 rows.
     
 /*23. Encuentra el nombre y apellido de los actores que no han actuado en ninguna película de la categoría "Horror".
 Utiliza una subconsulta para encontrar los actores que han actuado en películas de la categoría "Horror" y luego
@@ -256,7 +288,7 @@ exclúyelos de la lista de actores.
 EN: Find the first and last names of actors who have not acted in 'Horror' films. Use a subquery 
 to find the actors who have appeared in 'Horror' movies and then exclude them from the list of actors */ 
 
-SELECT a.first_name, a.last_name
+SELECT DISTINCT(CONCAT(a.first_name, " ", a.last_name))
 	FROM film_actor AS fa
     INNER JOIN film as f
     USING (film_id)
@@ -295,10 +327,8 @@ mostrar el nombre y apellido de los actores y el número de películas en las qu
 EN: Find all actors who have acted together in at least one movie. The query should display the first and last names of the 
 actors and the number of movies they have acted in together. */
 
-USE sakila;
-
 -- Creating a CTE to join actor and film_actor tables to retrieve first and last names. 
-WITH table_A AS (SELECT fa1.actor_id, a1.first_name, a1.last_name,fa1.film_id
+WITH table_A AS (SELECT fa1.actor_id, a1.first_name, a1.last_name, fa1.film_id
 					FROM film_actor AS fa1
 					INNER JOIN actor AS a1
 					USING (actor_id)),
@@ -309,7 +339,7 @@ WITH table_A AS (SELECT fa1.actor_id, a1.first_name, a1.last_name,fa1.film_id
 					INNER JOIN actor AS a2
 					USING (actor_id))
                 
-SELECT A.first_name AS Name1, A.last_name AS Surname1, B.first_name AS Name2, B.last_name AS Surname2, COUNT(A.film_id) as joint_films
+SELECT CONCAT(A.first_name, " ", A.last_name) AS actor_1, CONCAT(B.first_name, " ", B.last_name) AS actor_2, COUNT(A.film_id) as joint_films
 		FROM table_A AS A, table_B as B
 		WHERE A.actor_id <> B.actor_id AND A.film_id = B.film_id -- ensuring actors aren't paired with themselves and query returns films where they have acted together. 
 		GROUP BY A.actor_id, B.actor_id;
